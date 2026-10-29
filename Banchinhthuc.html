@@ -1,0 +1,2253 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sổ Theo Dõi Thi Đua & Phong Trào Lớp Học</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .modal-enter {
+            animation: fadeIn 0.18s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.97); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .shake-animation {
+            animation: shake 0.4s ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col bg-slate-50 relative">
+
+    <!-- MÀN HÌNH KHÓA BẢO VẬT MẬT KHẨU (060509) -->
+    <div id="authLockOverlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/85 backdrop-blur-md p-4 transition-all duration-300">
+        <div id="authLockCard" class="bg-white w-full max-w-sm rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 flex flex-col items-center text-center modal-enter">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center text-2xl shadow-inner mb-4">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            
+            <h2 class="text-xl font-bold text-slate-800">Xác Thực Quyền Truy Cập</h2>
+            <p class="text-xs text-slate-500 mt-1 mb-5">Hệ thống quản lý nề nếp lớp học được bảo vệ. Vui lòng nhập mật khẩu để mở khóa.</p>
+
+            <form onsubmit="handleAuthSubmit(event)" class="w-full space-y-4">
+                <div class="relative">
+                    <input 
+                        type="password" 
+                        id="authPassInput" 
+                        maxlength="10"
+                        placeholder="Nhập mã bảo mật..." 
+                        autocomplete="off"
+                        class="w-full text-center tracking-widest text-lg font-bold py-3 px-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50 transition"
+                    >
+                </div>
+                
+                <p id="authErrorMsg" class="text-xs text-rose-500 font-medium hidden">
+                    <i class="fa-solid fa-circle-exclamation mr-1"></i> Mật khẩu không chính xác!
+                </p>
+
+                <button 
+                    type="submit" 
+                    class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2"
+                >
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i> Mở Khóa Truy Cập
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Top Navigation Header -->
+    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl shadow-inner border border-white/20">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight">Hệ Thống Quản Lý Nề Nếp & Phong Trào Lớp Học</h1>
+                    <p class="text-xs text-indigo-100 font-medium">Sĩ số theo dõi: 41 học sinh</p>
+                </div>
+            </div>
+
+            <!-- Header Action buttons -->
+            <div class="flex items-center gap-2">
+                <!-- NÚT KẾT NỐI GOOGLE SHEETS -->
+                <button onclick="openCloudConfigModal()" id="cloudStatusBtn" title="Kết nối đồng bộ Google Sheets" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition">
+                    <i id="cloudIcon" class="fa-solid fa-cloud"></i>
+                    <span id="cloudStatusText" class="hidden sm:inline">Google Sheets</span>
+                </button>
+
+                <button onclick="openCreateCampaignModal()" class="inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition-all duration-150">
+                    <i class="fa-solid fa-plus-circle"></i>
+                    <span>Thêm Phong Trào Mới</span>
+                </button>
+                <button onclick="backupJSON()" title="Sao lưu toàn bộ dữ liệu ra tệp JSON" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                    <span class="hidden md:inline">Sao lưu</span>
+                </button>
+                <label title="Khôi phục dữ liệu từ tệp JSON" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition cursor-pointer">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span class="hidden md:inline">Khôi phục</span>
+                    <input type="file" id="restoreFileInput" accept=".json" onchange="restoreJSON(event)" class="hidden">
+                </label>
+                <button onclick="exportComprehensiveCSV()" title="Xuất dữ liệu Excel (CSV)" class="inline-flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white shadow-sm transition">
+                    <i class="fa-solid fa-file-excel"></i>
+                    <span class="hidden sm:inline">Xuất Tổng Hợp</span>
+                </button>
+                <button onclick="lockSystem()" title="Khóa màn hình làm việc" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl bg-rose-500/80 hover:bg-rose-600 text-white border border-white/10 transition ml-1">
+                    <i class="fa-solid fa-lock"></i>
+                    <span class="hidden lg:inline">Khóa</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+        <!-- Navigation Tabs: Danh sách học sinh vs Danh sách các phong trào vs Thống kê & Báo cáo -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-2 border-b border-slate-200">
+            <div class="flex flex-wrap gap-2">
+                <button id="tabBtnStudents" onclick="switchMainTab('students')" class="px-4 py-2 text-sm font-bold rounded-xl bg-indigo-600 text-white shadow-sm flex items-center gap-2 transition">
+                    <i class="fa-solid fa-users"></i>
+                    Danh Sách Học Sinh (41)
+                </button>
+                <button id="tabBtnCampaigns" onclick="switchMainTab('campaigns')" class="px-4 py-2 text-sm font-bold rounded-xl bg-white text-slate-600 hover:text-indigo-600 border border-slate-200 shadow-sm flex items-center gap-2 transition">
+                    <i class="fa-solid fa-flag"></i>
+                    Quản Lý Phong Trào (<span id="campaignTabBadge">0</span>)
+                </button>
+                <button id="tabBtnReports" onclick="switchMainTab('reports')" class="px-4 py-2 text-sm font-bold rounded-xl bg-white text-slate-600 hover:text-indigo-600 border border-slate-200 shadow-sm flex items-center gap-2 transition">
+                    <i class="fa-solid fa-chart-column"></i>
+                    Thống Kê & Báo Cáo
+                </button>
+            </div>
+            
+            <p class="text-xs text-slate-500 italic hidden lg:block">
+                * Nhấp vào tên học sinh để ghi lỗi vi phạm hoặc xem các phong trào đã tham gia.
+            </p>
+        </div>
+
+        <!-- TAB 1: DANH SÁCH HỌC SINH -->
+        <div id="tabStudentsView">
+            <!-- Search & Quick Filters -->
+            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200/80 mb-5 flex flex-col md:flex-row items-center justify-between gap-3">
+                <div class="relative w-full md:w-80">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        oninput="renderStudentList()" 
+                        placeholder="Tìm học sinh theo tên hoặc STT..." 
+                        class="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
+                    >
+                </div>
+                
+                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end text-xs">
+                    <span class="text-slate-500 font-medium">Lọc:</span>
+                    <button onclick="setFilter('all')" id="filter-all" class="filter-chip px-3 py-1.5 rounded-lg font-medium border bg-indigo-600 text-white border-indigo-600 shadow-sm transition">Tất cả</button>
+                    <button onclick="setFilter('has-violation')" id="filter-has-violation" class="filter-chip px-3 py-1.5 rounded-lg font-medium border bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 transition">Có vi phạm</button>
+                    <button onclick="setFilter('has-campaign')" id="filter-has-campaign" class="filter-chip px-3 py-1.5 rounded-lg font-medium border bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 transition">Có tham gia phong trào</button>
+                </div>
+            </div>
+
+            <!-- Student Grid -->
+            <div id="studentContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <!-- Dynamically rendered students -->
+            </div>
+
+            <!-- Empty Search State -->
+            <div id="noResult" class="hidden text-center py-16">
+                <div class="w-16 h-16 mx-auto mb-3 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 text-2xl">
+                    <i class="fa-regular fa-folder-open"></i>
+                </div>
+                <h4 class="text-base font-semibold text-slate-700">Không tìm thấy học sinh</h4>
+                <p class="text-sm text-slate-500 mt-1">Vui lòng thử tìm với từ khóa khác.</p>
+            </div>
+        </div>
+
+        <!-- TAB 2: CÁC ĐỢT PHONG TRÀO ĐÃ TẠO -->
+        <div id="tabCampaignsView" class="hidden space-y-4">
+            <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800">Danh Sách Phong Trào Đã Tạo</h2>
+                    <p class="text-xs text-slate-500">Tạo tên phong trào trước, sau đó điểm danh ai tham gia bất kỳ lúc nào</p>
+                </div>
+                <button onclick="openCreateCampaignModal()" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-plus"></i> + Thêm phong trào
+                </button>
+            </div>
+
+            <div id="campaignsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Dynamically rendered campaign cards -->
+            </div>
+
+            <div id="noCampaignsNotice" class="hidden text-center py-16 bg-white rounded-2xl border border-dashed border-slate-200">
+                <i class="fa-solid fa-flag text-slate-300 text-4xl mb-3 block"></i>
+                <h4 class="text-base font-semibold text-slate-700">Chưa có phong trào nào</h4>
+                <p class="text-xs text-slate-500 mt-1 mb-4">Bạn chỉ cần bấm "Thêm phong trào" để ghi tên hoạt động trước.</p>
+                <button onclick="openCreateCampaignModal()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition">
+                    + Thêm phong trào ngay
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 3: THỐNG KÊ & BÁO CÁO TOÀN DIỆN (THEO NGÀY, TUẦN, THÁNG, NĂM & PHONG TRÀO) -->
+        <div id="tabReportsView" class="hidden space-y-6">
+            <!-- PHẦN 1: BỘ LỌC VÀ THỐNG KÊ VI PHẠM THEO THỜI GIAN -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/90 space-y-5">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center text-sm font-bold">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </span>
+                            Thống Kê Vi Phạm Nề Nếp
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Lọc danh sách vi phạm theo ngày, tuần, tháng hoặc năm học và xuất file Excel</p>
+                    </div>
+
+                    <!-- Nút xuất Excel riêng cho phần vi phạm -->
+                    <button onclick="exportViolationReportCSV()" class="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-sm flex items-center gap-2 transition self-start md:self-auto">
+                        <i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo Vi Phạm (Excel)
+                    </button>
+                </div>
+
+                <!-- Các nút chọn chu kỳ thời gian -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <span class="text-xs font-semibold text-slate-600">Xem theo:</span>
+                    <div class="inline-flex p-1 bg-slate-100 rounded-xl text-xs font-semibold">
+                        <button onclick="setReportPeriod('day')" id="period-btn-day" class="px-3 py-1.5 rounded-lg transition bg-white text-indigo-600 shadow-xs">Theo Ngày</button>
+                        <button onclick="setReportPeriod('week')" id="period-btn-week" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">Theo Tuần</button>
+                        <button onclick="setReportPeriod('month')" id="period-btn-month" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">Theo Tháng</button>
+                        <button onclick="setReportPeriod('year')" id="period-btn-year" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">Theo Năm</button>
+                    </div>
+
+                    <!-- Ô chọn cụ thể tùy theo chu kỳ -->
+                    <div class="flex items-center gap-2">
+                        <!-- Theo ngày -->
+                        <div id="periodPickerDay" class="flex items-center gap-1.5">
+                            <input type="date" id="reportDateInput" onchange="generateReport()" class="text-xs px-3 py-1.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                        </div>
+                        <!-- Theo tuần -->
+                        <div id="periodPickerWeek" class="hidden flex items-center gap-1.5">
+                            <input type="week" id="reportWeekInput" onchange="generateReport()" class="text-xs px-3 py-1.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                        </div>
+                        <!-- Theo tháng -->
+                        <div id="periodPickerMonth" class="hidden flex items-center gap-1.5">
+                            <input type="month" id="reportMonthInput" onchange="generateReport()" class="text-xs px-3 py-1.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                        </div>
+                        <!-- Theo năm -->
+                        <div id="periodPickerYear" class="hidden flex items-center gap-1.5">
+                            <select id="reportYearInput" onchange="generateReport()" class="text-xs px-3 py-1.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                                <!-- Điền năm bằng JS -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thẻ tóm tắt số liệu vi phạm trong kỳ -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="p-3.5 bg-rose-50/70 border border-rose-200 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-rose-700 font-medium">Tổng lượt vi phạm</p>
+                            <h3 id="statTotalViolations" class="text-xl font-bold text-rose-900 mt-0.5">0</h3>
+                        </div>
+                        <i class="fa-solid fa-triangle-exclamation text-rose-400 text-2xl"></i>
+                    </div>
+                    <div class="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-indigo-700 font-medium">Số học sinh vi phạm</p>
+                            <h3 id="statViolatingStudentsCount" class="text-xl font-bold text-indigo-900 mt-0.5">0</h3>
+                        </div>
+                        <i class="fa-solid fa-user-xmark text-indigo-400 text-2xl"></i>
+                    </div>
+                    <div class="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-emerald-700 font-medium">Học sinh không vi phạm</p>
+                            <h3 id="statCleanStudentsCount" class="text-xl font-bold text-emerald-900 mt-0.5">41</h3>
+                        </div>
+                        <i class="fa-solid fa-shield-heart text-emerald-400 text-2xl"></i>
+                    </div>
+                </div>
+
+                <!-- Bảng danh sách các vi phạm trong chu kỳ chọn -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold uppercase tracking-wider text-[11px]">
+                            <tr>
+                                <th class="p-3 w-14 text-center">STT</th>
+                                <th class="p-3 w-48">Họ và Tên</th>
+                                <th class="p-3 w-28">Ngày vi phạm</th>
+                                <th class="p-3">Nội dung lỗi vi phạm</th>
+                                <th class="p-3 w-40">Điểm trừ / Ghi chú</th>
+                            </tr>
+                        </thead>
+                        <tbody id="violationReportTableBody" class="divide-y divide-slate-200 bg-white">
+                            <!-- Dữ liệu vi phạm lọc theo ngày/tuần/tháng/năm được render tại đây -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PHẦN 2: THỐNG KÊ HOẠT ĐỘNG PHONG TRÀO -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/90 space-y-4">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm font-bold">
+                                <i class="fa-solid fa-flag"></i>
+                            </span>
+                            Thống Kê Phong Trào & Thi Đua Lớp
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Tổng hợp chi tiết từng đợt phong trào, danh sách tham gia và không tham gia</p>
+                    </div>
+
+                    <!-- Nút xuất Excel riêng cho phần phong trào -->
+                    <button onclick="exportCampaignReportCSV()" class="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center gap-2 transition self-start md:self-auto">
+                        <i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo Phong Trào (Excel)
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead class="bg-slate-100 text-slate-700 font-semibold uppercase tracking-wider text-[11px]">
+                            <tr>
+                                <th class="p-3 w-12 text-center">#</th>
+                                <th class="p-3 w-44">Tên Phong Trào</th>
+                                <th class="p-3 w-28">Ngày diễn ra</th>
+                                <th class="p-3 w-28 text-center">Tham gia</th>
+                                <th class="p-3">Danh sách tham gia</th>
+                                <th class="p-3">Không tham gia</th>
+                            </tr>
+                        </thead>
+                        <tbody id="campaignReportTableBody" class="divide-y divide-slate-200 bg-white">
+                            <!-- Dữ liệu tổng hợp phong trào render tại đây -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL 1: CHI TIẾT HỌC SINH (NHẬP VI PHẠM & XEM PHONG TRÀO THAM GIA / KHÔNG THAM GIA) -->
+    <div id="detailModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden modal-enter">
+            <!-- Modal Header -->
+            <div class="px-5 py-4 bg-gradient-to-r from-indigo-700 to-indigo-600 text-white flex items-center justify-between border-b border-indigo-800/40">
+                <div class="flex items-center gap-3">
+                    <span id="modalSttBadge" class="bg-white/20 border border-white/30 text-white text-xs font-bold px-2.5 py-1 rounded-lg">STT 01</span>
+                    <div>
+                        <h2 id="modalStudentName" class="text-lg sm:text-xl font-bold leading-tight">Họ và Tên</h2>
+                        <p class="text-xs text-indigo-100">Chi tiết vi phạm & Tình hình tham gia phong trào</p>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content (2 Distinct Sections) -->
+            <div class="p-5 overflow-y-auto flex-1 space-y-6 bg-slate-50">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                    <!-- SECTION 1: LỖI VI PHẠM (NHẬP VÀ XEM LỖI) -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-rose-200 flex flex-col">
+                        <div class="flex items-center justify-between pb-3 border-b border-rose-100 mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-7 h-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center text-xs font-bold">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                </span>
+                                <h3 class="font-bold text-rose-950 text-sm sm:text-base">Mục 1: Lỗi Vi Phạm</h3>
+                            </div>
+                            <span id="modalViolationCountBadge" class="bg-rose-50 text-rose-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-rose-200">0 lỗi</span>
+                        </div>
+
+                        <!-- Form Add Violation -->
+                        <form id="violationForm" onsubmit="addViolation(event)" class="space-y-3 mb-4 bg-rose-50/40 p-3.5 rounded-xl border border-rose-100">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">
+                                    Lỗi vi phạm được chọn:
+                                </label>
+                                <!-- Hộp hiển thị lỗi đã chọn kèm nút chọn lỗi hiện đại -->
+                                <div class="flex items-center gap-2">
+                                    <div id="selectedViolationDisplay" class="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-600 truncate font-medium">
+                                        Chưa chọn lỗi vi phạm
+                                    </div>
+                                    <button 
+                                        type="button" 
+                                        onclick="openViolationPickerModal()" 
+                                        class="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition whitespace-nowrap"
+                                    >
+                                        <i class="fa-solid fa-list-check"></i> Chọn Lỗi
+                                    </button>
+                                </div>
+                                <input type="hidden" id="selectedViolationValue" value="">
+                            </div>
+
+                            <!-- Ô nhập lỗi tùy chỉnh khi chọn 'Khác' -->
+                            <div id="customViolationWrapper" class="hidden">
+                                <label class="block text-xs font-semibold text-rose-700 mb-1">Mô tả chi tiết lỗi vi phạm khác *</label>
+                                <input 
+                                    type="text" 
+                                    id="customViolationContent" 
+                                    placeholder="Ghi rõ nội dung lỗi vi phạm..." 
+                                    class="w-full text-xs sm:text-sm px-3 py-2 bg-white rounded-lg border border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                                >
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ngày vi phạm</label>
+                                    <input 
+                                        type="date" 
+                                        id="violationDate" 
+                                        class="w-full text-xs sm:text-sm px-3 py-1.5 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                                    >
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ghi chú / Điểm trừ</label>
+                                    <input 
+                                        type="text" 
+                                        id="violationPenalty" 
+                                        placeholder="Vd: -2 điểm, Đã nhắc nhở" 
+                                        class="w-full text-xs sm:text-sm px-3 py-1.5 bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
+                                    >
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-plus"></i> Lưu Lỗi Vi Phạm
+                            </button>
+                        </form>
+
+                        <!-- Violation List (Được thiết kế lại dạng thẻ gọn gàng, trực quan) -->
+                        <div class="flex-1 overflow-y-auto max-h-56 pr-1">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center justify-between">
+                                <span>Lịch sử vi phạm:</span>
+                                <span class="text-[11px] text-slate-400 font-normal">Mới nhất xếp trên</span>
+                            </h4>
+                            <div id="violationList" class="space-y-2">
+                                <!-- Dynamic Violation entries -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 2: PHONG TRÀO THAM GIA (HIỂN THỊ CÁC PHONG TRÀO LỚP & TRẠNG THÁI) -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-emerald-200 flex flex-col">
+                        <div class="flex items-center justify-between pb-3 border-b border-emerald-100 mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">
+                                    <i class="fa-solid fa-flag"></i>
+                                </span>
+                                <h3 class="font-bold text-emerald-950 text-sm sm:text-base">Mục 2: Phong Trào Tham Gia</h3>
+                            </div>
+                            <span id="modalCampaignCountBadge" class="bg-emerald-50 text-emerald-700 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-emerald-200">0 phong trào</span>
+                        </div>
+
+                        <p class="text-xs text-slate-500 mb-3">
+                            Tự động thống kê dựa trên các đợt phong trào bạn đã tạo ở ngoài:
+                        </p>
+
+                        <!-- Student Campaign List -->
+                        <div id="studentCampaignList" class="flex-1 overflow-y-auto max-h-80 space-y-2 pr-1">
+                            <!-- Dynamically loaded campaign participation status -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-5 py-3.5 bg-white border-t border-slate-200 flex items-center justify-end">
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+                    Đóng cửa sổ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CHỌN LỖI VI PHẠM THÔNG MINH (PHÂN NHÓM & TÌM KIẾM NHANH) -->
+    <div id="violationPickerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden modal-enter">
+            <!-- Header Modal -->
+            <div class="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center text-sm font-bold">
+                        <i class="fa-solid fa-list-check"></i>
+                    </span>
+                    <h3 class="text-sm sm:text-base font-bold">Chọn Lỗi Vi Phạm Nội Quy (41 Mục)</h3>
+                </div>
+                <button type="button" onclick="closeViolationPickerModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition text-xs">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Search bar & Category filter -->
+            <div class="p-3 bg-slate-100 border-b border-slate-200 flex flex-col sm:flex-row gap-2">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input 
+                        type="text" 
+                        id="pickerSearchInput" 
+                        oninput="renderViolationPickerList()"
+                        placeholder="Tìm kiếm lỗi vi phạm (số hiệu hoặc từ khóa)..." 
+                        class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    >
+                </div>
+                <select id="pickerCategoryFilter" onchange="renderViolationPickerList()" class="text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500 font-medium">
+                    <option value="all">Tất cả nhóm</option>
+                    <option value="chuyen-can">1. Chuyên cần & Giờ giấc</option>
+                    <option value="tac-phong">2. Tác phong & Đồng phục</option>
+                    <option value="ve-sinh">3. Vệ sinh & Môi trường</option>
+                    <option value="ky-luat">4. Trật tự & Thái độ</option>
+                    <option value="nghiem-trong">5. Vi phạm nghiêm trọng</option>
+                </select>
+            </div>
+
+            <!-- List items divided nicely -->
+            <div id="violationPickerListContainer" class="p-4 overflow-y-auto flex-1 space-y-4 bg-slate-50">
+                <!-- Dynamically populated violation categories & cards -->
+            </div>
+
+            <!-- Custom Other Option (Nổi bật dưới cùng) -->
+            <div class="p-3 bg-white border-t border-slate-200 flex items-center justify-between">
+                <span class="text-xs text-slate-500">Không tìm thấy lỗi phù hợp?</span>
+                <button type="button" onclick="selectViolationOption('__OTHER__', '⚙️ Lỗi vi phạm khác (Tự nhập chi tiết)')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-pen-to-square"></i> Chọn: Tự nhập lỗi khác
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: THÊM / SỬA THÔNG TIN PHONG TRÀO (CHỈ NHẬP THÔNG TIN CƠ BẢN) -->
+    <div id="campaignModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden modal-enter">
+            <!-- Modal Header -->
+            <div class="px-5 py-4 bg-emerald-600 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-flag"></i>
+                    </span>
+                    <div>
+                        <h2 id="campaignModalTitle" class="text-base sm:text-lg font-bold">Thêm Phong Trào Mới</h2>
+                        <p class="text-xs text-emerald-100">Ghi tên phong trào (điểm danh người tham gia lúc nào làm cũng được)</p>
+                    </div>
+                </div>
+                <button onclick="closeCampaignModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body: Chỉ nhập thông tin phong trào -->
+            <form id="createCampaignForm" onsubmit="saveCampaignInfo(event)" class="p-5 space-y-4 bg-slate-50">
+                <input type="hidden" id="editingCampaignId" value="">
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tên phong trào / Hoạt động *</label>
+                    <input 
+                        type="text" 
+                        id="inputCampaignName" 
+                        required 
+                        placeholder="Vd: Dọn dẹp vệ sinh sân trường, Văn nghệ 20/11..." 
+                        class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                    >
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Ngày diễn ra</label>
+                        <input 
+                            type="date" 
+                            id="inputCampaignDate" 
+                            class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Ghi chú / Địa điểm</label>
+                        <input 
+                            type="text" 
+                            id="inputCampaignNotes" 
+                            placeholder="Vd: Tại sân trường, Tiết sinh hoạt..." 
+                            class="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                        >
+                    </div>
+                </div>
+
+                <div class="p-3 bg-emerald-50/70 border border-emerald-100 rounded-xl text-xs text-emerald-800">
+                    <i class="fa-solid fa-circle-info mr-1"></i>
+                    Bạn chỉ cần tạo tên phong trào trước. Việc điểm danh ai tham gia hay vắng có thể thực hiện và chỉnh sửa bất cứ lúc nào!
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+                    <button type="button" onclick="closeCampaignModal()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:bg-slate-100 transition">
+                        Hủy
+                    </button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition">
+                        Lưu Phong Trào
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: ĐIỂM DANH / THỐNG KÊ NGƯỜI THAM GIA PHONG TRÀO (SỬA ĐỔI BẤT KỲ LÚC NÀO) -->
+    <div id="attendanceModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden modal-enter">
+            <!-- Modal Header -->
+            <div class="px-5 py-4 bg-indigo-600 text-white flex items-center justify-between">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-user-check"></i> Điểm Danh / Chọn Người Tham Gia
+                    </h2>
+                    <p id="attendanceCampaignSubtitle" class="text-xs text-indigo-100 mt-0.5">Tên phong trào</p>
+                </div>
+                <button onclick="closeAttendanceModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Action bar -->
+            <div class="px-5 py-2.5 bg-slate-100 border-b border-slate-200 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                    <button onclick="setAllAttendance(true)" class="px-2.5 py-1 bg-white hover:bg-emerald-50 text-emerald-700 border border-slate-300 hover:border-emerald-300 rounded-lg font-medium transition">
+                        <i class="fa-solid fa-check-double"></i> Chọn tất cả (41)
+                    </button>
+                    <button onclick="setAllAttendance(false)" class="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-700 border border-slate-300 hover:border-rose-300 rounded-lg font-medium transition">
+                        <i class="fa-solid fa-xmark"></i> Bỏ chọn tất cả
+                    </button>
+                </div>
+                <span id="attendanceCountDisplay" class="font-bold text-slate-700">0/41 bạn</span>
+            </div>
+
+            <!-- Modal Body (Checkbox Grid 41 học sinh) -->
+            <div class="p-4 overflow-y-auto flex-1 bg-slate-50">
+                <div id="attendanceCheckboxGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <!-- Dynamic attendance checkboxes -->
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-5 py-3.5 bg-white border-t border-slate-200 flex items-center justify-between">
+                <span class="text-xs text-slate-400 italic">* Bỏ tích chọn mặc định là không tham gia</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="closeAttendanceModal()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:bg-slate-100 transition">
+                        Hủy
+                    </button>
+                    <button onclick="saveAttendanceChanges()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition">
+                        Lưu Danh Sách Tham Gia
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL XÁC NHẬN XÓA PHONG TRÀO (THAY THẾ CONFIRM BỊ CHẶN) -->
+    <div id="confirmDeleteModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 border border-slate-100 modal-enter text-center">
+            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl mx-auto mb-3 border border-rose-100">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800">Xóa Phong Trào?</h3>
+            <p id="confirmDeleteCampaignName" class="text-xs text-slate-500 mt-1 mb-5">Bạn có chắc chắn muốn xóa phong trào này không? Thao tác này không thể hoàn tác.</p>
+            <div class="flex items-center justify-center gap-2">
+                <button type="button" onclick="closeConfirmDeleteModal()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:bg-slate-100 transition flex-1">
+                    Hủy bỏ
+                </button>
+                <button type="button" id="btnConfirmDeleteExec" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition flex-1">
+                    Xác nhận xóa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CẤU HÌNH ĐỒNG BỘ GOOGLE SHEETS API -->
+    <div id="cloudConfigModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden modal-enter border border-slate-100">
+            <div class="px-5 py-4 bg-emerald-600 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-file-excel"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold">Đồng Bộ Google Sheets</h3>
+                        <p class="text-xs text-emerald-100">Đồng bộ tự động dữ liệu trên mọi thiết bị</p>
+                    </div>
+                </div>
+                <button onclick="closeCloudConfigModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition text-xs">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 bg-slate-50 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Đường dẫn Google Apps Script Web App URL:</label>
+                    <input 
+                        type="url" 
+                        id="cloudScriptUrlInput" 
+                        placeholder="https://script.google.com/macros/s/.../exec"
+                        class="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                    >
+                    <p class="text-[11px] text-slate-400 mt-1">Dán link Web App bạn đã Deploy từ Apps Script của Google Sheets.</p>
+                </div>
+
+                <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-900 space-y-1">
+                    <p class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-info"></i> Lợi ích khi kết nối:</p>
+                    <p>• Dữ liệu tự động lưu trực tiếp vào bảng tính Google Sheets.</p>
+                    <p>• Mở trang web trên điện thoại hay máy tính khác chỉ cần dán cùng link là dữ liệu đồng bộ ngay lập tức!</p>
+                </div>
+
+                <div class="flex flex-col gap-2 pt-2 border-t border-slate-200">
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="pullDataFromCloud()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-cloud-arrow-down"></i> Tải Về Từ Sheets
+                        </button>
+                        <button type="button" onclick="syncDataToCloud()" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Đẩy Lên Sheets
+                        </button>
+                    </div>
+                    <button type="button" onclick="saveCloudUrlOnly()" class="w-full py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold transition">
+                        Lưu URL & Đóng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastMessage" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-800 text-white text-xs sm:text-sm px-4 py-3 rounded-2xl shadow-xl flex items-center space-x-2 border border-slate-700 pointer-events-none">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastText">Thao tác thành công!</span>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // 1. DANH SÁCH 41 HỌC SINH (ĐÃ LOẠI BỎ SỐ 22 TRẦN THỊ THẢO MY)
+        const initialStudents = [
+            { stt: 1, name: "Lê Duy Anh" },
+            { stt: 2, name: "Lê Thị Thùy Anh" },
+            { stt: 3, name: "Nguyễn Trịnh Minh Anh" },
+            { stt: 4, name: "Nguyễn Đăng Hoàng Bảo" },
+            { stt: 5, name: "Lê Thị Như Bình" },
+            { stt: 6, name: "Phạm Ngọc Kiến Bình" },
+            { stt: 7, name: "Lê Đình Dinh" },
+            { stt: 8, name: "Nguyễn Thùy Giang" },
+            { stt: 9, name: "Đào Thị Thu Hà" },
+            { stt: 10, name: "Hồ Hoàng Nhật Hà" },
+            { stt: 11, name: "Đoàn Minh Hào" },
+            { stt: 12, name: "Hồ Quang Hào" },
+            { stt: 13, name: "Trương Thị Ngọc Hân" },
+            { stt: 14, name: "Nguyễn Văn Hiếu" },
+            { stt: 15, name: "Phạm Văn Hiếu" },
+            { stt: 16, name: "Nguyễn Đăng Khôi" },
+            { stt: 17, name: "Nguyễn Trung Kiên" },
+            { stt: 18, name: "Trịnh Y Kiên" },
+            { stt: 19, name: "Phạm Thành Luân" },
+            { stt: 20, name: "Đặng Đoàn Tiến Minh" },
+            { stt: 21, name: "Phan Anh Minh" },
+            { stt: 23, name: "Trịnh Thị Bảo Ngọc" },
+            { stt: 24, name: "Bùi Quỳnh Như" },
+            { stt: 25, name: "Đoàn Y Như" },
+            { stt: 26, name: "Nguyễn Minh Phú" },
+            { stt: 27, name: "Nguyễn Xuân Phúc" },
+            { stt: 28, name: "Trần Thị Mai Phương" },
+            { stt: 29, name: "Phan Chính Anh Quân" },
+            { stt: 30, name: "Phan Minh Thái" },
+            { stt: 31, name: "Vũ Đức Thịnh" },
+            { stt: 32, name: "Lê Anh Thư" },
+            { stt: 33, name: "Trần Thị Anh Thư" },
+            { stt: 34, name: "Nguyễn Minh Tiến" },
+            { stt: 35, name: "Phạm Khánh Toàn" },
+            { stt: 36, name: "Bùi Thị Huyền Trang" },
+            { stt: 37, name: "Vũ Huyền Trang" },
+            { stt: 38, name: "Nguyễn Minh Triết" },
+            { stt: 39, name: "Đặng Thị Thanh Trúc" },
+            { stt: 40, name: "Trần Mậu Trường" },
+            { stt: 41, name: "Nguyễn Minh Tuấn" },
+            { stt: 42, name: "Nguyễn Hoàng Quốc Văn" }
+        ];
+
+        // Khóa lưu trữ LocalStorage
+        const VIOLATIONS_STORAGE_KEY = 'class_violations_data_v2';
+        const CAMPAIGNS_STORAGE_KEY = 'class_campaigns_data_v2';
+        const CLOUD_SCRIPT_URL_KEY = 'class_google_sheets_script_url';
+
+        // Biến trạng thái toàn cục
+        let violationsData = {};
+        let campaignsData = [];
+        let googleScriptUrl = '';
+        let isSyncing = false;
+        let currentStudentStt = null;
+        let currentEditingAttendanceCampaignId = null;
+        let campaignIdPendingDelete = null;
+        let currentFilter = 'all';
+        let currentReportPeriod = 'month';
+
+        // 2. DANH SÁCH 41 MỤC LỖI ĐƯỢC PHÂN THEO NHÓM ĐỂ DỄ NHÌN VÀ QUẢN LÝ
+        const GROUPED_VIOLATIONS = [
+            {
+                categoryKey: "chuyen-can",
+                categoryName: "1. Chuyên Cần & Giờ Giấc",
+                icon: "fa-regular fa-clock",
+                color: "text-amber-600",
+                items: [
+                    "1. Vắng mặt hoặc xin về có sự đồng ý của Nhà trường",
+                    "2. Đi học trễ hoặc vắng có phép",
+                    "7. Vắng được triệu tập theo kế hoạch",
+                    "8. Học sinh tập trung chào cờ trễ giờ (sau 6h55)",
+                    "10. Vắng học không xin phép",
+                    "24. Trốn tiết",
+                    "33. Cả lớp tập trung trễ giờ chào cờ hoặc sinh hoạt tập thể"
+                ]
+            },
+            {
+                categoryKey: "tac-phong",
+                categoryName: "2. Tác Phong & Trang Phục",
+                icon: "fa-solid fa-shirt",
+                color: "text-indigo-600",
+                items: [
+                    "3. Vi phạm tác phong khác",
+                    "4. Không sơ vin áo",
+                    "5. Không phù hiệu",
+                    "6. Để giày dép không gọn gàng (mang giày dép vào trong lớp)",
+                    "9. Dép sai quy định",
+                    "15. Trang điểm đậm",
+                    "19. Nhuộm tóc...",
+                    "20. Kẻ tóc...",
+                    "21. Xỏ khuyên tai không phù hợp",
+                    "25. Đeo phù hiệu của học sinh khác",
+                    "34. Hình xăm phản cảm"
+                ]
+            },
+            {
+                categoryKey: "ve-sinh",
+                categoryName: "3. Vệ Sinh & Môi Trường Lớp Học",
+                icon: "fa-solid fa-broom",
+                color: "text-emerald-600",
+                items: [
+                    "11. Lớp không giữ vệ sinh trong lớp và hành lang",
+                    "12. Vứt rác bừa bãi",
+                    "16. Không tắt điện...",
+                    "17. Mang thức ăn vào lớp học",
+                    "18. Mang nước uống có màu vào lớp học",
+                    "23. Không thu dọn ghế sau khi kết thúc hoạt động tập thể"
+                ]
+            },
+            {
+                categoryKey: "ky-luat",
+                categoryName: "4. Trật Tự & Kỷ Luật Học Đường",
+                icon: "fa-solid fa-triangle-exclamation",
+                color: "text-orange-600",
+                items: [
+                    "13. Ngồi lên bàn học hoặc lan can",
+                    "14. Sử dụng ngôn ngữ thiếu chuẩn mực",
+                    "22. Leo tường",
+                    "26. Vi phạm an toàn giao thông",
+                    "30. Dùng điện thoại và thiết bị khác sai nội quy",
+                    "32. Xúc phạm chế giễu bạn bè",
+                    "37. Vi phạm quy chế kiểm tra"
+                ]
+            },
+            {
+                categoryKey: "nghiem-trong",
+                categoryName: "5. Vi Phạm Nghiêm Trọng",
+                icon: "fa-solid fa-skull-crossbones",
+                color: "text-rose-600",
+                items: [
+                    "27. Dùng mạng xã hội xúc phạm nhân phẩm người khác",
+                    "28. Tham gia nhóm có nội dung vi phạm pháp luật",
+                    "29. Mang vũ khí hoặc vật sắc nhọn nguy hiểm",
+                    "31. Tàng trữ hoặc chia sẻ văn hóa phẩm độc hại",
+                    "35. Mang hoặc sử dụng chất cấm",
+                    "36. Vô lễ với giáo viên nhân viên nhà trường",
+                    "38. Gây gổ đánh nhau",
+                    "39. Trộm cắp hoặc phá hoại tài sản",
+                    "40. Mang và sử dụng pháo (vật liệu nổ)",
+                    "41. Đánh bài dưới mọi hình thức"
+                ]
+            }
+        ];
+
+        // ======================= BẢO MẬT MẬT KHẨU (060509) =======================
+        const APP_AUTH_KEY = "classroom_discipline_auth_token";
+        const VALID_PIN = "060509";
+
+        function checkAuth() {
+            const isAuth = sessionStorage.getItem(APP_AUTH_KEY);
+            const overlay = document.getElementById('authLockOverlay');
+            if (isAuth === 'true') {
+                overlay.classList.add('hidden');
+            } else {
+                overlay.classList.remove('hidden');
+                setTimeout(() => {
+                    document.getElementById('authPassInput').focus();
+                }, 100);
+            }
+        }
+
+        function handleAuthSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('authPassInput');
+            const card = document.getElementById('authLockCard');
+            const errorMsg = document.getElementById('authErrorMsg');
+
+            if (input.value.trim() === VALID_PIN) {
+                sessionStorage.setItem(APP_AUTH_KEY, 'true');
+                errorMsg.classList.add('hidden');
+                document.getElementById('authLockOverlay').classList.add('hidden');
+                input.value = '';
+                showToast('Mở khóa thành công!');
+            } else {
+                errorMsg.classList.remove('hidden');
+                card.classList.remove('shake-animation');
+                void card.offsetWidth; // Trigger reflow
+                card.classList.add('shake-animation');
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function lockSystem() {
+            sessionStorage.removeItem(APP_AUTH_KEY);
+            document.getElementById('authLockOverlay').classList.remove('hidden');
+            document.getElementById('authPassInput').value = '';
+            document.getElementById('authErrorMsg').classList.add('hidden');
+            document.getElementById('authPassInput').focus();
+            showToast('Đã khóa màn hình!');
+        }
+
+        // ======================= MODAL CHỌN LỖI VI PHẠM THÔNG MINH =======================
+        function openViolationPickerModal() {
+            document.getElementById('pickerSearchInput').value = '';
+            document.getElementById('pickerCategoryFilter').value = 'all';
+            renderViolationPickerList();
+            document.getElementById('violationPickerModal').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('pickerSearchInput').focus();
+            }, 100);
+        }
+
+        function closeViolationPickerModal() {
+            document.getElementById('violationPickerModal').classList.add('hidden');
+        }
+
+        function selectViolationOption(val, displayLabel) {
+            const hiddenInput = document.getElementById('selectedViolationValue');
+            const displayEl = document.getElementById('selectedViolationDisplay');
+            const customWrapper = document.getElementById('customViolationWrapper');
+            const customInput = document.getElementById('customViolationContent');
+
+            hiddenInput.value = val;
+            displayEl.textContent = displayLabel;
+            displayEl.className = "flex-1 bg-white border border-rose-300 rounded-xl px-3 py-2 text-xs text-rose-900 truncate font-bold";
+
+            if (val === '__OTHER__') {
+                customWrapper.classList.remove('hidden');
+                customInput.required = true;
+                setTimeout(() => customInput.focus(), 150);
+            } else {
+                customWrapper.classList.add('hidden');
+                customInput.required = false;
+                customInput.value = '';
+            }
+
+            closeViolationPickerModal();
+        }
+
+        function renderViolationPickerList() {
+            const container = document.getElementById('violationPickerListContainer');
+            const searchKeyword = (document.getElementById('pickerSearchInput').value || '').trim().toLowerCase();
+            const selectedCat = document.getElementById('pickerCategoryFilter').value;
+
+            container.innerHTML = '';
+            let totalMatched = 0;
+
+            GROUPED_VIOLATIONS.forEach(group => {
+                if (selectedCat !== 'all' && group.categoryKey !== selectedCat) {
+                    return;
+                }
+
+                // Lọc các item trong nhóm
+                const matchedItems = group.items.filter(item => item.toLowerCase().includes(searchKeyword));
+                if (matchedItems.length === 0) return;
+
+                totalMatched += matchedItems.length;
+
+                const groupDiv = document.createElement('div');
+                groupDiv.className = "bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs";
+
+                groupDiv.innerHTML = `
+                    <div class="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100">
+                        <i class="${group.icon} ${group.color} text-xs"></i>
+                        <h4 class="text-xs font-bold text-slate-700">${group.categoryName}</h4>
+                        <span class="text-[10px] text-slate-400 font-semibold ml-auto">${matchedItems.length} lỗi</span>
+                    </div>
+                    <div class="grid grid-cols-1 gap-1.5">
+                        ${matchedItems.map(item => `
+                            <button 
+                                type="button" 
+                                onclick="selectViolationOption('${escapeHtml(item)}', '${escapeHtml(item)}')"
+                                class="w-full text-left p-2 rounded-xl border border-transparent hover:border-rose-200 hover:bg-rose-50/60 text-xs text-slate-700 hover:text-rose-900 transition flex items-center justify-between group"
+                            >
+                                <span class="pr-2 leading-relaxed">${escapeHtml(item)}</span>
+                                <i class="fa-solid fa-check text-rose-500 opacity-0 group-hover:opacity-100 transition text-[11px]"></i>
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(groupDiv);
+            });
+
+            if (totalMatched === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass text-2xl mb-2 block"></i>
+                        <p class="text-xs font-medium">Không tìm thấy lỗi vi phạm phù hợp</p>
+                        <p class="text-[11px] text-slate-400 mt-1">Bạn có thể chọn nút "Tự nhập lỗi khác" bên dưới.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Khởi động ứng dụng
+        function initApp() {
+            checkAuth();
+
+            // Lấy URL Google Sheets đã lưu
+            googleScriptUrl = localStorage.getItem(CLOUD_SCRIPT_URL_KEY) || '';
+            updateCloudStatusUI();
+
+            try {
+                const savedViolations = localStorage.getItem(VIOLATIONS_STORAGE_KEY);
+                if (savedViolations) {
+                    violationsData = JSON.parse(savedViolations);
+                }
+            } catch(e) {
+                violationsData = {};
+            }
+
+            try {
+                const savedCampaigns = localStorage.getItem(CAMPAIGNS_STORAGE_KEY);
+                if (savedCampaigns) {
+                    campaignsData = JSON.parse(savedCampaigns);
+                }
+            } catch(e) {
+                campaignsData = [];
+            }
+
+            // Đảm bảo mọi học sinh đều có mảng vi phạm
+            initialStudents.forEach(s => {
+                if (!violationsData[s.stt]) {
+                    violationsData[s.stt] = [];
+                }
+            });
+
+            // Set ngày mặc định là hôm nay
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            document.getElementById('violationDate').value = todayStr;
+            document.getElementById('inputCampaignDate').value = todayStr;
+
+            // Khởi tạo các ô lọc báo cáo
+            document.getElementById('reportDateInput').value = todayStr;
+            
+            // Năm học lựa chọn
+            const yearSelect = document.getElementById('reportYearInput');
+            yearSelect.innerHTML = '';
+            const curYear = today.getFullYear();
+            for (let y = curYear + 1; y >= curYear - 4; y--) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = `Năm ${y}`;
+                if (y === curYear) opt.selected = true;
+                yearSelect.appendChild(opt);
+            }
+
+            // Tháng lựa chọn (YYYY-MM)
+            const curMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            document.getElementById('reportMonthInput').value = curMonthStr;
+
+            // Tuần lựa chọn (YYYY-Www)
+            const weekNumber = getWeekNumber(today);
+            document.getElementById('reportWeekInput').value = `${today.getFullYear()}-W${String(weekNumber).padStart(2, '0')}`;
+
+            setReportPeriod('month');
+            updateCampaignBadge();
+            renderStudentList();
+            renderCampaignList();
+
+            // Nếu đã có cấu hình Google Sheets, tự động đồng bộ dữ liệu mới nhất
+            if (googleScriptUrl) {
+                pullDataFromCloud(true);
+            }
+        }
+
+        // ======================= GOOGLE SHEETS SYNC LOGIC =======================
+        function openCloudConfigModal() {
+            document.getElementById('cloudScriptUrlInput').value = googleScriptUrl;
+            document.getElementById('cloudConfigModal').classList.remove('hidden');
+        }
+
+        function closeCloudConfigModal() {
+            document.getElementById('cloudConfigModal').classList.add('hidden');
+        }
+
+        function updateCloudStatusUI() {
+            const btn = document.getElementById('cloudStatusBtn');
+            const icon = document.getElementById('cloudIcon');
+            const text = document.getElementById('cloudStatusText');
+            if (!btn || !icon || !text) return;
+
+            if (googleScriptUrl) {
+                btn.className = "inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm transition";
+                icon.className = isSyncing ? "fa-solid fa-arrows-rotate fa-spin" : "fa-solid fa-cloud-arrow-up";
+                text.textContent = isSyncing ? "Đang đồng bộ..." : "Đã nối Sheets";
+            } else {
+                btn.className = "inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition";
+                icon.className = "fa-solid fa-cloud";
+                text.textContent = "Nối Sheets";
+            }
+        }
+
+        function saveCloudUrlOnly() {
+            const url = document.getElementById('cloudScriptUrlInput').value.trim();
+            googleScriptUrl = url;
+            localStorage.setItem(CLOUD_SCRIPT_URL_KEY, url);
+            updateCloudStatusUI();
+            closeCloudConfigModal();
+            showToast('Đã lưu cấu hình Google Sheets!');
+        }
+
+        // Đẩy toàn bộ dữ liệu lên Google Sheets
+        async function syncDataToCloud(silent = false) {
+            const urlInput = document.getElementById('cloudScriptUrlInput').value.trim();
+            if (urlInput) {
+                googleScriptUrl = urlInput;
+                localStorage.setItem(CLOUD_SCRIPT_URL_KEY, urlInput);
+            }
+
+            if (!googleScriptUrl) {
+                openCloudConfigModal();
+                showToast('Vui lòng dán link Apps Script của bạn!');
+                return;
+            }
+
+            isSyncing = true;
+            updateCloudStatusUI();
+
+            try {
+                const payload = {
+                    violations: violationsData,
+                    campaigns: campaignsData
+                };
+
+                await fetch(googleScriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors', // Tránh lỗi CORS từ Apps Script
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!silent) showToast('Đã đồng bộ lên Google Sheets thành công!');
+            } catch (err) {
+                console.error("Lỗi đồng bộ Google Sheets:", err);
+                if (!silent) showToast('Lỗi khi gửi dữ liệu lên Google Sheets!');
+            } finally {
+                isSyncing = false;
+                updateCloudStatusUI();
+            }
+        }
+
+        // Tải dữ liệu từ Google Sheets về máy
+        async function pullDataFromCloud(silent = false) {
+            const urlInput = document.getElementById('cloudScriptUrlInput').value.trim();
+            if (urlInput) {
+                googleScriptUrl = urlInput;
+                localStorage.setItem(CLOUD_SCRIPT_URL_KEY, urlInput);
+            }
+
+            if (!googleScriptUrl) {
+                if (!silent) openCloudConfigModal();
+                return;
+            }
+
+            isSyncing = true;
+            updateCloudStatusUI();
+
+            try {
+                const res = await fetch(googleScriptUrl);
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    if (data.violations && Object.keys(data.violations).length > 0) {
+                        violationsData = data.violations;
+                        saveViolations();
+                    }
+                    if (data.campaigns && data.campaigns.length > 0) {
+                        campaignsData = data.campaigns;
+                        saveCampaigns();
+                    }
+                    renderStudentList();
+                    renderCampaignList();
+                    generateReport();
+                    if (currentStudentStt) renderModalStudentDetail();
+                    if (!silent) showToast('Đã nạp dữ liệu từ Google Sheets!');
+                }
+            } catch (err) {
+                console.error("Lỗi tải từ Google Sheets:", err);
+                if (!silent) showToast('Không thể kết nối đến Google Sheets!');
+            } finally {
+                isSyncing = false;
+                updateCloudStatusUI();
+                closeCloudConfigModal();
+            }
+        }
+
+        function saveViolations() {
+            localStorage.setItem(VIOLATIONS_STORAGE_KEY, JSON.stringify(violationsData));
+            // Tự động đồng bộ ngầm nếu đã nối Google Sheets
+            if (googleScriptUrl) {
+                syncDataToCloud(true);
+            }
+        }
+
+        function saveCampaigns() {
+            localStorage.setItem(CAMPAIGNS_STORAGE_KEY, JSON.stringify(campaignsData));
+            updateCampaignBadge();
+            // Tự động đồng bộ ngầm nếu đã nối Google Sheets
+            if (googleScriptUrl) {
+                syncDataToCloud(true);
+            }
+        }
+
+        function updateCampaignBadge() {
+            const badge = document.getElementById('campaignTabBadge');
+            if (badge) {
+                badge.textContent = campaignsData.length;
+            }
+        }
+
+        // Chuyển Tab chính: students | campaigns | reports
+        function switchMainTab(tab) {
+            const tabStudents = document.getElementById('tabStudentsView');
+            const tabCampaigns = document.getElementById('tabCampaignsView');
+            const tabReports = document.getElementById('tabReportsView');
+
+            const btnStudents = document.getElementById('tabBtnStudents');
+            const btnCampaigns = document.getElementById('tabBtnCampaigns');
+            const btnReports = document.getElementById('tabBtnReports');
+
+            if (!tabStudents || !tabCampaigns || !tabReports || !btnStudents || !btnCampaigns || !btnReports) {
+                return;
+            }
+
+            // Ẩn tất cả tab nội dung
+            tabStudents.classList.add('hidden');
+            tabCampaigns.classList.add('hidden');
+            tabReports.classList.add('hidden');
+
+            // Style nút bấm
+            const inactiveClass = "px-4 py-2 text-sm font-bold rounded-xl bg-white text-slate-600 hover:text-indigo-600 border border-slate-200 shadow-sm flex items-center gap-2 transition";
+            const activeClass = "px-4 py-2 text-sm font-bold rounded-xl bg-indigo-600 text-white shadow-sm flex items-center gap-2 transition";
+
+            btnStudents.className = inactiveClass;
+            btnCampaigns.className = inactiveClass;
+            btnReports.className = inactiveClass;
+
+            if (tab === 'students') {
+                tabStudents.classList.remove('hidden');
+                btnStudents.className = activeClass;
+                renderStudentList();
+            } else if (tab === 'campaigns') {
+                tabCampaigns.classList.remove('hidden');
+                btnCampaigns.className = activeClass;
+                renderCampaignList();
+            } else if (tab === 'reports') {
+                tabReports.classList.remove('hidden');
+                btnReports.className = activeClass;
+                generateReport();
+            }
+        }
+
+        // ======================= THỐNG KÊ & BÁO CÁO =======================
+        function setReportPeriod(period) {
+            currentReportPeriod = period;
+            const periods = ['day', 'week', 'month', 'year'];
+            periods.forEach(p => {
+                const btn = document.getElementById('period-btn-' + p);
+                const picker = document.getElementById('periodPicker' + p.charAt(0).toUpperCase() + p.slice(1));
+                if (p === period) {
+                    btn.className = "px-3 py-1.5 rounded-lg transition bg-white text-indigo-600 shadow-xs font-bold";
+                    picker.classList.remove('hidden');
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900";
+                    picker.classList.add('hidden');
+                }
+            });
+            generateReport();
+        }
+
+        // Kiểm tra xem 1 ngày chuỗi (dd/mm/yyyy hoặc yyyy-mm-dd) có thuộc chu kỳ lọc không
+        function isDateInPeriod(dateStr, period) {
+            if (!dateStr) return false;
+            let d;
+            if (dateStr.includes('/')) {
+                const [day, mon, year] = dateStr.split('/');
+                d = new Date(parseInt(year), parseInt(mon) - 1, parseInt(day));
+            } else if (dateStr.includes('-')) {
+                const [year, mon, day] = dateStr.split('-');
+                d = new Date(parseInt(year), parseInt(mon) - 1, parseInt(day));
+            } else {
+                return false;
+            }
+
+            if (isNaN(d.getTime())) return false;
+
+            if (period === 'day') {
+                const selDateStr = document.getElementById('reportDateInput').value; // yyyy-mm-dd
+                if (!selDateStr) return true;
+                const [sy, sm, sd] = selDateStr.split('-');
+                return d.getFullYear() === parseInt(sy) && (d.getMonth() + 1) === parseInt(sm) && d.getDate() === parseInt(sd);
+            } 
+            else if (period === 'week') {
+                const selWeekVal = document.getElementById('reportWeekInput').value; // yyyy-Www
+                if (!selWeekVal) return true;
+                const [selYear, selWk] = selWeekVal.split('-W');
+                return d.getFullYear() === parseInt(selYear) && getWeekNumber(d) === parseInt(selWk);
+            } 
+            else if (period === 'month') {
+                const selMonthVal = document.getElementById('reportMonthInput').value; // yyyy-mm
+                if (!selMonthVal) return true;
+                const [selYear, selMon] = selMonthVal.split('-');
+                return d.getFullYear() === parseInt(selYear) && (d.getMonth() + 1) === parseInt(selMon);
+            } 
+            else if (period === 'year') {
+                const selYearVal = parseInt(document.getElementById('reportYearInput').value);
+                return d.getFullYear() === selYearVal;
+            }
+            return true;
+        }
+
+        function getWeekNumber(d) {
+            const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            const dayNum = date.getUTCDay() || 7;
+            date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+            return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+        }
+
+        // Lấy danh sách vi phạm đã lọc theo khoảng thời gian
+        function getFilteredViolations() {
+            const results = [];
+            initialStudents.forEach(st => {
+                const vList = violationsData[st.stt] || [];
+                vList.forEach(v => {
+                    if (isDateInPeriod(v.date, currentReportPeriod)) {
+                        results.push({
+                            stt: st.stt,
+                            name: st.name,
+                            date: v.date,
+                            content: v.content,
+                            penalty: v.penalty || 'Nhắc nhở'
+                        });
+                    }
+                });
+            });
+            return results;
+        }
+
+        // Tạo báo cáo và cập nhật bảng
+        function generateReport() {
+            const filteredViolations = getFilteredViolations();
+            
+            // Cập nhật số liệu tóm tắt
+            const totalViolations = filteredViolations.length;
+            const uniqueStudents = new Set(filteredViolations.map(v => v.stt));
+            const violatingStudentsCount = uniqueStudents.size;
+            const cleanStudentsCount = initialStudents.length - violatingStudentsCount;
+
+            document.getElementById('statTotalViolations').textContent = totalViolations;
+            document.getElementById('statViolatingStudentsCount').textContent = violatingStudentsCount;
+            document.getElementById('statCleanStudentsCount').textContent = cleanStudentsCount;
+
+            // Render bảng vi phạm
+            const vTbody = document.getElementById('violationReportTableBody');
+            if (filteredViolations.length === 0) {
+                vTbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="p-6 text-center text-slate-400 italic">
+                            <i class="fa-solid fa-circle-check text-emerald-500 text-lg mb-1 block"></i>
+                            Không có lỗi vi phạm nào trong chu kỳ thời gian đã chọn!
+                        </td>
+                    </tr>
+                `;
+            } else {
+                vTbody.innerHTML = filteredViolations.map((v, i) => `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 text-center font-bold text-slate-500">${i + 1}</td>
+                        <td class="p-3">
+                            <span class="font-bold text-slate-800">${escapeHtml(v.name)}</span>
+                            <span class="text-[11px] text-slate-400 ml-1">(STT ${v.stt})</span>
+                        </td>
+                        <td class="p-3 text-slate-600 font-medium">${v.date || 'Hôm nay'}</td>
+                        <td class="p-3 font-semibold text-rose-700">${escapeHtml(v.content)}</td>
+                        <td class="p-3 text-slate-600">${escapeHtml(v.penalty)}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Render bảng phong trào
+            const cTbody = document.getElementById('campaignReportTableBody');
+            if (campaignsData.length === 0) {
+                cTbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="p-6 text-center text-slate-400 italic">
+                            Chưa có phong trào nào được tạo.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                cTbody.innerHTML = campaignsData.map((camp, idx) => {
+                    const parts = camp.participants || [];
+                    const partNames = initialStudents.filter(s => parts.includes(s.stt)).map(s => s.name);
+                    const nonPartNames = initialStudents.filter(s => !parts.includes(s.stt)).map(s => s.name);
+
+                    return `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="p-3 text-center font-bold text-slate-400">${idx + 1}</td>
+                            <td class="p-3">
+                                <p class="font-bold text-slate-800">${escapeHtml(camp.name)}</p>
+                                ${camp.notes ? `<p class="text-[11px] text-slate-400">${escapeHtml(camp.notes)}</p>` : ''}
+                            </td>
+                            <td class="p-3 text-slate-600">${camp.date || '—'}</td>
+                            <td class="p-3 text-center">
+                                <span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full text-[11px]">
+                                    ${partNames.length} / 41
+                                </span>
+                            </td>
+                            <td class="p-3 text-slate-700 leading-relaxed max-w-xs sm:max-w-md">
+                                ${partNames.length > 0 ? partNames.join(', ') : '<span class="text-slate-400 italic">Chưa có ai</span>'}
+                            </td>
+                            <td class="p-3 text-slate-500 leading-relaxed max-w-xs sm:max-w-md">
+                                ${nonPartNames.length > 0 ? nonPartNames.join(', ') : '<span class="text-emerald-600 italic">Tất cả đều tham gia</span>'}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // ======================= XUẤT CÁC LOẠI FILE EXCEL (CSV UTF-8) =======================
+        // 1. Xuất báo cáo vi phạm theo bộ lọc thời gian đang chọn
+        function exportViolationReportCSV() {
+            const filtered = getFilteredViolations();
+            if (filtered.length === 0) {
+                showToast('Không có dữ liệu vi phạm trong thời gian này để xuất!');
+                return;
+            }
+
+            let csv = "\uFEFF"; // UTF-8 BOM
+            csv += `BÁO CÁO VI PHẠM NỀ NẾP (Theo ${currentReportPeriod.toUpperCase()})\n`;
+            csv += "STT,Họ và Tên,Số Danh Sách,Ngày Vi Phạm,Nội Dung Lỗi,Ghi Chú/Điểm Trừ\n";
+
+            filtered.forEach((item, idx) => {
+                const row = [
+                    idx + 1,
+                    `"${item.name.replace(/"/g, '""')}"`,
+                    item.stt,
+                    `"${item.date || ''}"`,
+                    `"${item.content.replace(/"/g, '""')}"`,
+                    `"${item.penalty.replace(/"/g, '""')}"`
+                ];
+                csv += row.join(",") + "\n";
+            });
+
+            downloadCSVFile(csv, `Bao_cao_vi_pham_${currentReportPeriod}_${new Date().toISOString().split('T')[0]}.csv`);
+        }
+
+        // 2. Xuất báo cáo phong trào
+        function exportCampaignReportCSV() {
+            if (campaignsData.length === 0) {
+                showToast('Chưa có dữ liệu phong trào để xuất!');
+                return;
+            }
+
+            let csv = "\uFEFF";
+            csv += "BÁO CÁO THỐNG KÊ HOẠT ĐỘNG PHONG TRÀO LỚP\n";
+            csv += "STT,Tên Phong Trào,Ngày Diễn Ra,Địa Điểm/Ghi Chú,Số Lượng Tham Gia,Danh Sách Tham Gia,Danh Sách Không Tham Gia\n";
+
+            campaignsData.forEach((camp, idx) => {
+                const parts = camp.participants || [];
+                const partNames = initialStudents.filter(s => parts.includes(s.stt)).map(s => `${s.stt}. ${s.name}`).join('; ');
+                const nonPartNames = initialStudents.filter(s => !parts.includes(s.stt)).map(s => `${s.stt}. ${s.name}`).join('; ');
+
+                const row = [
+                    idx + 1,
+                    `"${camp.name.replace(/"/g, '""')}"`,
+                    `"${camp.date || ''}"`,
+                    `"${(camp.notes || '').replace(/"/g, '""')}"`,
+                    `"${parts.length}/41"`,
+                    `"${partNames.replace(/"/g, '""')}"`,
+                    `"${nonPartNames.replace(/"/g, '""')}"`
+                ];
+                csv += row.join(",") + "\n";
+            });
+
+            downloadCSVFile(csv, `Bao_cao_phong_trao_${new Date().toISOString().split('T')[0]}.csv`);
+        }
+
+        // 3. Xuất báo cáo tổng hợp toàn diện (Học sinh, tổng lỗi, các phong trào)
+        function exportComprehensiveCSV() {
+            let csv = "\uFEFF";
+            csv += "BÁO CÁO TỔNG HỢP NỀ NẾP & PHONG TRÀO LỚP HỌC\n";
+            csv += "STT,Họ và Tên,Tổng Lỗi Vi Phạm,Chi Tiết Các Lỗi Vi Phạm,Tổng Phong Trào Tham Gia,Các Phong Trào Đã Tham Gia,Các Phong Trào Không Tham Gia\n";
+
+            initialStudents.forEach(st => {
+                const vList = violationsData[st.stt] || [];
+                const violationsText = vList.map(v => `[${v.date || ''}] ${v.content} (${v.penalty || 'Nhắc nhở'})`).join(' ; ');
+
+                const participatedCampaigns = campaignsData.filter(c => c.participants && c.participants.includes(st.stt)).map(c => c.name);
+                const nonParticipatedCampaigns = campaignsData.filter(c => !c.participants || !c.participants.includes(st.stt)).map(c => c.name);
+
+                const row = [
+                    st.stt,
+                    `"${st.name.replace(/"/g, '""')}"`,
+                    vList.length,
+                    `"${violationsText.replace(/"/g, '""')}"`,
+                    participatedCampaigns.length,
+                    `"${participatedCampaigns.join(' ; ').replace(/"/g, '""')}"`,
+                    `"${nonParticipatedCampaigns.join(' ; ').replace(/"/g, '""')}"`
+                ];
+                csv += row.join(",") + "\n";
+            });
+
+            downloadCSVFile(csv, `Bao_cao_tong_hop_${new Date().toISOString().split('T')[0]}.csv`);
+        }
+
+        function downloadCSVFile(content, fileName) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Đã xuất file Excel thành công!');
+        }
+
+        // ======================= SAO LƯU & KHÔI PHỤC JSON =======================
+        function backupJSON() {
+            const data = {
+                version: "2.0",
+                backupDate: new Date().toISOString(),
+                violationsData,
+                campaignsData
+            };
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Du_lieu_sao_luu_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Đã tải tệp sao lưu dữ liệu!');
+        }
+
+        function restoreJSON(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const parsed = JSON.parse(evt.target.result);
+                    if (parsed.violationsData) {
+                        violationsData = parsed.violationsData;
+                        saveViolations();
+                    }
+                    if (parsed.campaignsData) {
+                        campaignsData = parsed.campaignsData;
+                        saveCampaigns();
+                    }
+                    renderStudentList();
+                    renderCampaignList();
+                    generateReport();
+                    showToast('Khôi phục dữ liệu thành công!');
+                } catch(err) {
+                    showToast('Tệp sao lưu không hợp lệ!');
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        }
+
+        // Bộ lọc cho danh sách học sinh
+        function setFilter(type) {
+            currentFilter = type;
+            document.querySelectorAll('.filter-chip').forEach(btn => {
+                btn.className = "filter-chip px-3 py-1.5 rounded-lg font-medium border bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 transition";
+            });
+            const activeBtn = document.getElementById('filter-' + type);
+            if (activeBtn) {
+                activeBtn.className = "filter-chip px-3 py-1.5 rounded-lg font-medium border bg-indigo-600 text-white border-indigo-600 shadow-sm transition";
+            }
+            renderStudentList();
+        }
+
+        // Đếm số phong trào 1 học sinh đã tham gia
+        function getStudentJoinedCampaignCount(stt) {
+            return campaignsData.filter(camp => camp.participants && camp.participants.includes(stt)).length;
+        }
+
+        // Hiển thị danh sách học sinh ở trang chính
+        function renderStudentList() {
+            const container = document.getElementById('studentContainer');
+            const noResult = document.getElementById('noResult');
+            const searchKeyword = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+
+            container.innerHTML = '';
+            let visibleCount = 0;
+
+            initialStudents.forEach(student => {
+                const studentViolations = violationsData[student.stt] || [];
+                const vCount = studentViolations.length;
+                const cCount = getStudentJoinedCampaignCount(student.stt);
+
+                // Lọc theo từ khóa tìm kiếm
+                const matchSearch = student.name.toLowerCase().includes(searchKeyword) || 
+                                    student.stt.toString().includes(searchKeyword);
+                if (!matchSearch) return;
+
+                // Lọc theo chế độ
+                if (currentFilter === 'has-violation' && vCount === 0) return;
+                if (currentFilter === 'has-campaign' && cCount === 0) return;
+
+                visibleCount++;
+
+                const card = document.createElement('div');
+                card.className = "group bg-white rounded-2xl p-4 shadow-sm hover:shadow-md border border-slate-200/90 hover:border-indigo-400 transition-all duration-200 cursor-pointer flex flex-col justify-between";
+                card.onclick = () => openStudentModal(student.stt);
+
+                // Màu chỉ số vi phạm
+                const vBadgeColor = vCount > 0 ? "bg-rose-50 text-rose-700 border-rose-200 font-bold" : "bg-slate-50 text-slate-500 border-slate-200";
+                // Màu chỉ số phong trào
+                const cBadgeColor = cCount > 0 ? "bg-emerald-50 text-emerald-700 border-emerald-200 font-bold" : "bg-slate-50 text-slate-500 border-slate-200";
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                STT ${student.stt}
+                            </span>
+                            <span class="text-xs text-slate-400 group-hover:text-indigo-600 flex items-center gap-1 transition">
+                                Xem & Nhập <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base group-hover:text-indigo-600 transition">
+                            ${student.name}
+                        </h3>
+                    </div>
+
+                    <!-- 2 mục thống kê riêng biệt: Vi phạm & Phong trào -->
+                    <div class="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
+                        <div class="p-2 rounded-xl border ${vBadgeColor} flex flex-col items-center justify-center text-center">
+                            <span class="text-base">${vCount}</span>
+                            <span class="text-[11px] flex items-center gap-1 mt-0.5">
+                                <i class="fa-solid fa-triangle-exclamation text-[10px]"></i> Lỗi vi phạm
+                            </span>
+                        </div>
+                        <div class="p-2 rounded-xl border ${cBadgeColor} flex flex-col items-center justify-center text-center">
+                            <span class="text-base">${cCount}</span>
+                            <span class="text-[11px] flex items-center gap-1 mt-0.5">
+                                <i class="fa-solid fa-flag text-[10px]"></i> Phong trào
+                            </span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            if (visibleCount === 0) {
+                noResult.classList.remove('hidden');
+            } else {
+                noResult.classList.add('hidden');
+            }
+        }
+
+        // ======================= MODAL HỌC SINH (NHẬP LỖI & XEM PHONG TRÀO) =======================
+        function openStudentModal(stt) {
+            currentStudentStt = stt;
+            const student = initialStudents.find(s => s.stt === stt);
+            if (!student) return;
+
+            document.getElementById('modalSttBadge').textContent = `STT ${student.stt}`;
+            document.getElementById('modalStudentName').textContent = student.name;
+
+            // Reset form lỗi vi phạm
+            document.getElementById('violationForm').reset();
+            document.getElementById('selectedViolationValue').value = '';
+            document.getElementById('selectedViolationDisplay').textContent = 'Chưa chọn lỗi vi phạm';
+            document.getElementById('selectedViolationDisplay').className = 'flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-600 truncate font-medium';
+            document.getElementById('customViolationWrapper').classList.add('hidden');
+            document.getElementById('customViolationContent').required = false;
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('violationDate').value = todayStr;
+
+            renderModalStudentDetail();
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+            currentStudentStt = null;
+        }
+
+        function renderModalStudentDetail() {
+            if (!currentStudentStt) return;
+            const student = initialStudents.find(s => s.stt === currentStudentStt);
+            const violations = violationsData[currentStudentStt] || [];
+
+            // 1. Render mục Vi phạm dạng thẻ tinh tế
+            document.getElementById('modalViolationCountBadge').textContent = `${violations.length} lỗi`;
+            const vContainer = document.getElementById('violationList');
+            if (violations.length === 0) {
+                vContainer.innerHTML = `
+                    <div class="text-center py-6 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-xs">
+                        <i class="fa-solid fa-circle-check text-emerald-500 text-base mb-1 block"></i>
+                        Chưa có lỗi vi phạm nào. Học sinh chấp hành nề nếp tốt!
+                    </div>
+                `;
+            } else {
+                vContainer.innerHTML = violations.map((v, idx) => `
+                    <div class="p-3 rounded-xl border border-rose-100 bg-white hover:border-rose-300 transition flex items-start justify-between gap-3 shadow-2xs">
+                        <div class="text-xs flex-1">
+                            <p class="font-bold text-slate-800 leading-snug">${escapeHtml(v.content)}</p>
+                            <div class="flex flex-wrap items-center gap-2 mt-1.5 text-[11px] text-slate-500">
+                                <span class="inline-flex items-center gap-1 font-medium text-slate-600">
+                                    <i class="fa-regular fa-calendar text-slate-400"></i> ${v.date || 'Hôm nay'}
+                                </span>
+                                ${v.penalty ? `<span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-md font-bold">${escapeHtml(v.penalty)}</span>` : ''}
+                            </div>
+                        </div>
+                        <button onclick="deleteViolation(${idx})" title="Xóa lỗi này" class="text-slate-300 hover:text-rose-600 p-1 text-xs transition">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // 2. Render mục Phong trào tham gia (Tự động từ các đợt phong trào đã tạo)
+            const cContainer = document.getElementById('studentCampaignList');
+            if (campaignsData.length === 0) {
+                cContainer.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 bg-white rounded-xl border border-dashed border-slate-200 text-xs">
+                        <i class="fa-solid fa-flag text-slate-300 text-2xl mb-1.5 block"></i>
+                        Lớp chưa tạo đợt phong trào nào.<br>
+                        Bấm nút <strong>"Tạo Phong Trào Mới"</strong> trên thanh menu để tạo.
+                    </div>
+                `;
+                document.getElementById('modalCampaignCountBadge').textContent = `0 tham gia`;
+                return;
+            }
+
+            let joinedCount = 0;
+            let listHtml = '';
+
+            campaignsData.forEach(camp => {
+                const isParticipated = camp.participants && camp.participants.includes(currentStudentStt);
+                if (isParticipated) joinedCount++;
+
+                listHtml += `
+                    <div class="p-3 rounded-xl border ${isParticipated ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white opacity-80'} flex items-center justify-between text-xs">
+                        <div>
+                            <p class="font-bold text-slate-800 text-xs sm:text-sm">${escapeHtml(camp.name)}</p>
+                            <p class="text-[11px] text-slate-500 mt-0.5">
+                                <i class="fa-regular fa-calendar text-slate-400"></i> Ngày: ${camp.date || 'Không có ngày'}
+                                ${camp.notes ? ` • ${escapeHtml(camp.notes)}` : ''}
+                            </p>
+                        </div>
+                        <div>
+                            ${isParticipated 
+                                ? `<span class="inline-flex items-center gap-1 bg-emerald-600 text-white font-bold text-[11px] px-2.5 py-1 rounded-lg shadow-xs">
+                                     <i class="fa-solid fa-check"></i> Đã tham gia
+                                   </span>`
+                                : `<span class="inline-flex items-center gap-1 bg-slate-100 text-slate-500 font-medium text-[11px] px-2.5 py-1 rounded-lg border border-slate-200">
+                                     <i class="fa-solid fa-xmark text-slate-400"></i> Không tham gia
+                                   </span>`
+                            }
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('modalCampaignCountBadge').textContent = `${joinedCount}/${campaignsData.length} phong trào`;
+            cContainer.innerHTML = listHtml;
+        }
+
+        // Thêm lỗi vi phạm cho học sinh
+        function addViolation(e) {
+            e.preventDefault();
+            if (!currentStudentStt) return;
+
+            const selectedVal = document.getElementById('selectedViolationValue').value;
+            let content = '';
+
+            if (selectedVal === '__OTHER__') {
+                content = (document.getElementById('customViolationContent').value || '').trim();
+                if (!content) {
+                    document.getElementById('customViolationContent').focus();
+                    return;
+                }
+                content = `Khác: ${content}`;
+            } else if (selectedVal) {
+                content = selectedVal;
+            } else {
+                openViolationPickerModal();
+                return;
+            }
+
+            const date = document.getElementById('violationDate').value;
+            const penalty = document.getElementById('violationPenalty').value.trim();
+
+            if (!violationsData[currentStudentStt]) {
+                violationsData[currentStudentStt] = [];
+            }
+
+            violationsData[currentStudentStt].unshift({
+                content,
+                date: formatDate(date),
+                penalty,
+                createdAt: new Date().toISOString()
+            });
+
+            saveViolations();
+            renderStudentList();
+            renderModalStudentDetail();
+
+            // Reset selection & custom field
+            document.getElementById('selectedViolationValue').value = '';
+            document.getElementById('selectedViolationDisplay').textContent = 'Chưa chọn lỗi vi phạm';
+            document.getElementById('selectedViolationDisplay').className = 'flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-600 truncate font-medium';
+            document.getElementById('customViolationContent').value = '';
+            document.getElementById('customViolationWrapper').classList.add('hidden');
+            document.getElementById('customViolationContent').required = false;
+            document.getElementById('violationPenalty').value = '';
+
+            showToast('Đã lưu lỗi vi phạm thành công!');
+        }
+
+        // Xóa vi phạm
+        function deleteViolation(index) {
+            if (!currentStudentStt || !violationsData[currentStudentStt]) return;
+            violationsData[currentStudentStt].splice(index, 1);
+            saveViolations();
+            renderStudentList();
+            renderModalStudentDetail();
+            showToast('Đã xóa lỗi vi phạm');
+        }
+
+        // ======================= QUẢN LÝ PHONG TRÀO (TẠO NHANH THÔNG TIN) =======================
+        function openCreateCampaignModal(campaignId = null) {
+            const form = document.getElementById('createCampaignForm');
+            form.reset();
+
+            const titleEl = document.getElementById('campaignModalTitle');
+            const idInput = document.getElementById('editingCampaignId');
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('inputCampaignDate').value = todayStr;
+
+            if (campaignId) {
+                const target = campaignsData.find(c => c.id === campaignId);
+                if (target) {
+                    titleEl.textContent = 'Chỉnh Sửa Thông Tin Phong Trào';
+                    idInput.value = target.id;
+                    document.getElementById('inputCampaignName').value = target.name;
+                    document.getElementById('inputCampaignDate').value = target.date ? convertDisplayDateToInput(target.date) : todayStr;
+                    document.getElementById('inputCampaignNotes').value = target.notes || '';
+                }
+            } else {
+                titleEl.textContent = 'Thêm Phong Trào Mới';
+                idInput.value = '';
+            }
+
+            document.getElementById('campaignModal').classList.remove('hidden');
+        }
+
+        function closeCampaignModal() {
+            document.getElementById('campaignModal').classList.add('hidden');
+        }
+
+        // Lưu thông tin phong trào (Không bắt buộc phải chọn học sinh ngay)
+        function saveCampaignInfo(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editingCampaignId').value;
+            const name = document.getElementById('inputCampaignName').value.trim();
+            const date = document.getElementById('inputCampaignDate').value;
+            const notes = document.getElementById('inputCampaignNotes').value.trim();
+
+            if (!name) return;
+
+            if (editId) {
+                const target = campaignsData.find(c => c.id === editId);
+                if (target) {
+                    target.name = name;
+                    target.date = formatDate(date);
+                    target.notes = notes;
+                    target.updatedAt = new Date().toISOString();
+                }
+                showToast('Đã cập nhật thông tin phong trào!');
+            } else {
+                const newCampaign = {
+                    id: 'camp_' + Date.now(),
+                    name,
+                    date: formatDate(date),
+                    notes,
+                    participants: [], // Ban đầu mặc định chưa chọn ai (ai chưa chọn là không tham gia)
+                    createdAt: new Date().toISOString()
+                };
+                campaignsData.unshift(newCampaign);
+                showToast('Đã thêm phong trào mới!');
+            }
+
+            saveCampaigns();
+            renderCampaignList();
+            renderStudentList();
+            if (currentStudentStt) renderModalStudentDetail();
+            closeCampaignModal();
+        }
+
+        // ======================= ĐIỂM DANH / THỐNG KÊ THAM GIA (SỬA LÚC NÀO CŨNG ĐƯỢC) =======================
+        function openAttendanceModal(campaignId) {
+            currentEditingAttendanceCampaignId = campaignId;
+            const camp = campaignsData.find(c => c.id === campaignId);
+            if (!camp) return;
+
+            document.getElementById('attendanceCampaignSubtitle').textContent = `Phong trào: ${camp.name} (${camp.date || 'Chưa có ngày'})`;
+            
+            const currentParticipants = camp.participants || [];
+            const grid = document.getElementById('attendanceCheckboxGrid');
+
+            grid.innerHTML = initialStudents.map(st => {
+                const isChecked = currentParticipants.includes(st.stt);
+                return `
+                    <label class="flex items-center gap-2.5 p-2.5 rounded-xl border ${isChecked ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-slate-200'} hover:bg-slate-50 transition cursor-pointer text-xs select-none">
+                        <input 
+                            type="checkbox" 
+                            name="attendanceCheck" 
+                            value="${st.stt}" 
+                            ${isChecked ? 'checked' : ''} 
+                            onchange="onAttendanceCheckboxChange(this)"
+                            class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+                        >
+                        <span class="font-bold text-slate-400 w-7">#${st.stt}</span>
+                        <span class="font-semibold text-slate-800 flex-1 truncate">${st.name}</span>
+                        <span class="attendance-tag text-[10px] font-bold px-1.5 py-0.5 rounded ${isChecked ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-100 text-slate-400'}">
+                            ${isChecked ? 'Tham gia' : 'Vắng'}
+                        </span>
+                    </label>
+                `;
+            }).join('');
+
+            updateAttendanceCount();
+            document.getElementById('attendanceModal').classList.remove('hidden');
+        }
+
+        function closeAttendanceModal() {
+            document.getElementById('attendanceModal').classList.add('hidden');
+            currentEditingAttendanceCampaignId = null;
+        }
+
+        function onAttendanceCheckboxChange(cb) {
+            const parent = cb.closest('label');
+            const tag = parent.querySelector('.attendance-tag');
+            if (cb.checked) {
+                parent.className = "flex items-center gap-2.5 p-2.5 rounded-xl border bg-emerald-50 border-emerald-300 hover:bg-emerald-100 transition cursor-pointer text-xs select-none";
+                tag.className = "attendance-tag text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-800";
+                tag.textContent = "Tham gia";
+            } else {
+                parent.className = "flex items-center gap-2.5 p-2.5 rounded-xl border bg-white border-slate-200 hover:bg-slate-50 transition cursor-pointer text-xs select-none";
+                tag.className = "attendance-tag text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-400";
+                tag.textContent = "Vắng";
+            }
+            updateAttendanceCount();
+        }
+
+        function setAllAttendance(selectAll) {
+            const boxes = document.querySelectorAll('input[name="attendanceCheck"]');
+            boxes.forEach(cb => {
+                cb.checked = selectAll;
+                onAttendanceCheckboxChange(cb);
+            });
+            updateAttendanceCount();
+        }
+
+        function updateAttendanceCount() {
+            const checkedBoxes = document.querySelectorAll('input[name="attendanceCheck"]:checked');
+            document.getElementById('attendanceCountDisplay').textContent = `${checkedBoxes.length}/41 bạn`;
+        }
+
+        function saveAttendanceChanges() {
+            if (!currentEditingAttendanceCampaignId) return;
+            const target = campaignsData.find(c => c.id === currentEditingAttendanceCampaignId);
+            if (!target) return;
+
+            const checkedBoxes = document.querySelectorAll('input[name="attendanceCheck"]:checked');
+            target.participants = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+
+            saveCampaigns();
+            renderCampaignList();
+            renderStudentList();
+            if (currentStudentStt) renderModalStudentDetail();
+
+            closeAttendanceModal();
+            showToast('Đã lưu danh sách tham gia phong trào!');
+        }
+
+        // Mở hộp thoại xác nhận xóa phong trào (Không dùng confirm() để tránh lỗi trình duyệt)
+        function deleteCampaign(id) {
+            const camp = campaignsData.find(c => c.id === id);
+            campaignIdPendingDelete = id;
+            const nameEl = document.getElementById('confirmDeleteCampaignName');
+            if (camp) {
+                nameEl.textContent = `Bạn có chắc chắn muốn xóa phong trào "${camp.name}" không? Thao tác này không thể hoàn tác.`;
+            } else {
+                nameEl.textContent = 'Bạn có chắc chắn muốn xóa phong trào này không?';
+            }
+            
+            const btnExec = document.getElementById('btnConfirmDeleteExec');
+            btnExec.onclick = executeDeleteCampaign;
+
+            document.getElementById('confirmDeleteModal').classList.remove('hidden');
+        }
+
+        function closeConfirmDeleteModal() {
+            document.getElementById('confirmDeleteModal').classList.add('hidden');
+            campaignIdPendingDelete = null;
+        }
+
+        function executeDeleteCampaign() {
+            if (!campaignIdPendingDelete) return;
+            const targetId = campaignIdPendingDelete;
+            campaignsData = campaignsData.filter(c => c.id !== targetId);
+            saveCampaigns();
+            renderCampaignList();
+            renderStudentList();
+            if (currentStudentStt) renderModalStudentDetail();
+            generateReport();
+            closeConfirmDeleteModal();
+            showToast('Đã xóa phong trào thành công!');
+        }
+
+        // Hiển thị danh sách các đợt phong trào ở Tab 2
+        function renderCampaignList() {
+            const container = document.getElementById('campaignsContainer');
+            const emptyNotice = document.getElementById('noCampaignsNotice');
+
+            if (campaignsData.length === 0) {
+                container.innerHTML = '';
+                emptyNotice.classList.remove('hidden');
+                return;
+            }
+
+            emptyNotice.classList.add('hidden');
+            container.innerHTML = campaignsData.map(camp => {
+                const partCount = (camp.participants || []).length;
+                const nonPartCount = 41 - partCount;
+
+                return `
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/90 flex flex-col justify-between hover:shadow-md transition">
+                        <div>
+                            <div class="flex items-start justify-between gap-2 mb-2">
+                                <span class="bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-0.5 rounded-lg border border-emerald-200">
+                                    <i class="fa-regular fa-calendar"></i> ${camp.date || 'Chưa ghi ngày'}
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="openCreateCampaignModal('${camp.id}')" title="Sửa thông tin" class="w-7 h-7 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100 flex items-center justify-center transition text-xs">
+                                        <i class="fa-regular fa-pen-to-square"></i>
+                                    </button>
+                                    <button onclick="deleteCampaign('${camp.id}')" title="Xóa phong trào" class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition text-xs">
+                                        <i class="fa-regular fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <h3 class="font-bold text-slate-800 text-base leading-snug mb-1">
+                                ${escapeHtml(camp.name)}
+                            </h3>
+                            ${camp.notes ? `<p class="text-xs text-slate-500 mb-3"><i class="fa-solid fa-location-dot text-slate-400"></i> ${escapeHtml(camp.notes)}</p>` : '<div class="mb-3"></div>'}
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100">
+                            <!-- Thống kê nhanh người tham gia -->
+                            <div class="grid grid-cols-2 gap-2 text-xs mb-3">
+                                <div class="bg-emerald-50 p-2 rounded-xl text-center border border-emerald-100">
+                                    <p class="font-bold text-emerald-700 text-sm">${partCount}</p>
+                                    <p class="text-[10px] text-emerald-800 font-medium">Đã tham gia</p>
+                                </div>
+                                <div class="bg-slate-50 p-2 rounded-xl text-center border border-slate-200">
+                                    <p class="font-bold text-slate-600 text-sm">${nonPartCount}</p>
+                                    <p class="text-[10px] text-slate-500 font-medium">Không tham gia</p>
+                                </div>
+                            </div>
+
+                            <!-- Nút mở chọn / điểm danh người tham gia lúc nào cũng được -->
+                            <button onclick="openAttendanceModal('${camp.id}')" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-user-check"></i> Điểm danh / Chọn tham gia
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ======================= XUẤT CSV EXCEL TỔNG HỢP =======================
+        function exportDataCSV() {
+            let csvContent = "\uFEFF"; // BOM để Excel đọc đúng tiếng Việt
+            csvContent += "STT,Họ và Tên,Số Lỗi Vi Phạm,Chi Tiết Vi Phạm,Số Phong Trào Tham Gia,Các Phong Trào Đã Tham Gia,Các Phong Trào Không Tham Gia\n";
+
+            initialStudents.forEach(st => {
+                const vList = violationsData[st.stt] || [];
+                const violationsText = vList.map(v => `[${v.date || ''}] ${v.content} (${v.penalty || 'Nhắc nhở'})`).join(' ; ');
+
+                const participatedCampaigns = campaignsData.filter(c => c.participants && c.participants.includes(st.stt)).map(c => c.name);
+                const nonParticipatedCampaigns = campaignsData.filter(c => !c.participants || !c.participants.includes(st.stt)).map(c => c.name);
+
+                const row = [
+                    st.stt,
+                    `"${st.name.replace(/"/g, '""')}"`,
+                    vList.length,
+                    `"${violationsText.replace(/"/g, '""')}"`,
+                    participatedCampaigns.length,
+                    `"${participatedCampaigns.join(' ; ').replace(/"/g, '""')}"`,
+                    `"${nonParticipatedCampaigns.join(' ; ').replace(/"/g, '""')}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Bao_cao_thi_dua_phong_trao_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Đã tải xuống file CSV báo cáo');
+        }
+
+        // Toast thông báo
+        function showToast(msg) {
+            const toast = document.getElementById('toastMessage');
+            const toastText = document.getElementById('toastText');
+            toastText.textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        function formatDate(dStr) {
+            if (!dStr) return '';
+            const parts = dStr.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            return dStr;
+        }
+
+        function convertDisplayDateToInput(dStr) {
+            if (!dStr) return '';
+            const parts = dStr.split('/');
+            if (parts.length === 3) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+            return dStr;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Bắt phím tắt và click ra ngoài để đóng modal
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                closeCampaignModal();
+                closeAttendanceModal();
+                closeViolationPickerModal();
+                closeConfirmDeleteModal();
+                closeCloudConfigModal();
+            }
+        });
+
+        document.getElementById('detailModal').addEventListener('click', (e) => {
+            if (e.target.id === 'detailModal') closeModal();
+        });
+        document.getElementById('campaignModal').addEventListener('click', (e) => {
+            if (e.target.id === 'campaignModal') closeCampaignModal();
+        });
+        document.getElementById('attendanceModal').addEventListener('click', (e) => {
+            if (e.target.id === 'attendanceModal') closeAttendanceModal();
+        });
+        document.getElementById('violationPickerModal').addEventListener('click', (e) => {
+            if (e.target.id === 'violationPickerModal') closeViolationPickerModal();
+        });
+        document.getElementById('confirmDeleteModal').addEventListener('click', (e) => {
+            if (e.target.id === 'confirmDeleteModal') closeConfirmDeleteModal();
+        });
+        document.getElementById('cloudConfigModal').addEventListener('click', (e) => {
+            if (e.target.id === 'cloudConfigModal') closeCloudConfigModal();
+        });
+
+        // Khởi tạo
+        window.onload = function() {
+            initApp();
+        };
+    </script>
+</body>
+</html>
