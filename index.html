@@ -983,6 +983,14 @@
             closeViolationPickerModal();
         }
 
+        // Hàm tiện ích: Lấy chuỗi ngày hiện tại theo giờ địa phương (YYYY-MM-DD)
+        function getLocalDateString(targetDate = new Date()) {
+            const year = targetDate.getFullYear();
+            const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+            const day = String(targetDate.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
         function renderViolationPickerList() {
             const container = document.getElementById('violationPickerListContainer');
             const searchKeyword = (document.getElementById('pickerSearchInput').value || '').trim().toLowerCase();
@@ -1071,14 +1079,21 @@
                 }
             });
 
-            // Set ngày mặc định là hôm nay
+            // Tự động đồng bộ mọi ô nhập thời gian theo ngày hiện tại của máy (local time)
             const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
-            document.getElementById('violationDate').value = todayStr;
-            document.getElementById('inputCampaignDate').value = todayStr;
+            const todayStr = getLocalDateString(today);
+            
+            // 1. Ô ngày vi phạm
+            const vDateEl = document.getElementById('violationDate');
+            if (vDateEl) vDateEl.value = todayStr;
 
-            // Khởi tạo các ô lọc báo cáo
-            document.getElementById('reportDateInput').value = todayStr;
+            // 2. Ô ngày phong trào
+            const cDateEl = document.getElementById('inputCampaignDate');
+            if (cDateEl) cDateEl.value = todayStr;
+
+            // 3. Khởi tạo các ô lọc báo cáo theo đúng ngày hôm nay
+            const rDateEl = document.getElementById('reportDateInput');
+            if (rDateEl) rDateEl.value = todayStr;
             
             // Năm học lựa chọn
             const yearSelect = document.getElementById('reportYearInput');
@@ -1092,13 +1107,15 @@
                 yearSelect.appendChild(opt);
             }
 
-            // Tháng lựa chọn (YYYY-MM)
+            // Tháng lựa chọn (YYYY-MM) theo đúng tháng hiện tại
             const curMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-            document.getElementById('reportMonthInput').value = curMonthStr;
+            const rMonthEl = document.getElementById('reportMonthInput');
+            if (rMonthEl) rMonthEl.value = curMonthStr;
 
-            // Tuần lựa chọn (YYYY-Www)
+            // Tuần lựa chọn (YYYY-Www) theo đúng tuần của ngày hôm nay
             const weekNumber = getWeekNumber(today);
-            document.getElementById('reportWeekInput').value = `${today.getFullYear()}-W${String(weekNumber).padStart(2, '0')}`;
+            const rWeekEl = document.getElementById('reportWeekInput');
+            if (rWeekEl) rWeekEl.value = `${today.getFullYear()}-W${String(weekNumber).padStart(2, '0')}`;
 
             setReportPeriod('month');
             updateCampaignBadge();
@@ -1725,8 +1742,8 @@
             document.getElementById('customViolationWrapper').classList.add('hidden');
             document.getElementById('customViolationContent').required = false;
 
-            const todayStr = new Date().toISOString().split('T')[0];
-            document.getElementById('violationDate').value = todayStr;
+            // Tự động gán ngày hôm nay mỗi lần mở học sinh (có thể click đổi ngày khác nếu muốn)
+            document.getElementById('violationDate').value = getLocalDateString();
 
             renderModalStudentDetail();
             document.getElementById('detailModal').classList.remove('hidden');
@@ -1888,7 +1905,7 @@
 
             const titleEl = document.getElementById('campaignModalTitle');
             const idInput = document.getElementById('editingCampaignId');
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = getLocalDateString();
             document.getElementById('inputCampaignDate').value = todayStr;
 
             if (campaignId) {
